@@ -1,7 +1,14 @@
 import Vue from 'vue'
 import App from './App.vue'
 
+import vueAlerts from "@/plugins/vue-alerts"
 Vue.config.productionTip = false
+
+Vue.use(vueAlerts, {
+  developerMode: true,
+  presentBlockTime: 100,
+  dismissBlockTime: 300,
+})
 
 new Vue({
   render: h => h(App),
