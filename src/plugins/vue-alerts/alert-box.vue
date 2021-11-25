@@ -22,8 +22,6 @@
             text-align: center;
             width: 350px;
             border-radius: 1em;
-            overflow-x: hidden;
-            overflow-y: scroll;
             max-height: 80%;
             filter: drop-shadow(0px 0px 1em rgba(0, 0, 0, 0.2));
             opacity: 1;
