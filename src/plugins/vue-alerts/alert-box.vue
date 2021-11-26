@@ -333,13 +333,14 @@ export default {
         // Using this method so that that fx is wrapped with an async function and its error is always handled within this function.
         console.log(e);
         if (this.developerMode) {
+          console.log(fx)
           this.present(
             "[Developer] An internal error occured with the alertbox handler.",
             "While executing the alert action handler: " +
               fx +
               "\n\n" +
               e +
-              "\n\n This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console."
+              "\n\n This has been printed in the console."
           );
         }
       });
