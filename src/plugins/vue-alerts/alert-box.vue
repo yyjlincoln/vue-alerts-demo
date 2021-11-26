@@ -50,7 +50,7 @@
               margin: 1em 0em 0em 0em;
               display: flex;
               overflow-x: hidden;
-              overflow-y: scroll;
+              overflow-y: auto;
             "
             :style="
               alert.actions.length == 2
@@ -119,10 +119,8 @@ class Queue {
     this.autoDequeue = true;
   }
   queue(callback) {
-    // console.log('queue', this.internal_queue);
     this.internal_queue.push(callback);
     if (this.autoDequeue) {
-      // console.log('above autoDequeue');
       this.autoDequeue = false;
       this.dequeue();
     }
@@ -131,6 +129,7 @@ class Queue {
     // console.log('dequeue', this.internal_queue);
     if (this.internal_queue.length > 0) {
       let item = this.internal_queue.shift();
+      // alert("Queue");
       item();
     } else {
       this.autoDequeue = true;
@@ -147,7 +146,7 @@ export default {
     stackLevel: 0,
     developerMode: false,
     presentBlockTime: 100,
-    dismissBlockTime: 300, // 300 ms is the time taken for the transition to finish
+    dismissBlockTime: 100, // 300 ms is the time taken for the transition to finish
   }),
   mounted() {
     this.$alert.instance = this;
@@ -212,6 +211,7 @@ export default {
         defaultEscapeAction = null, // If null and a cancel action is present, then that first cancel action becomes the default. Otherwise, the alert can not be dismissed via esc.
         preventKeyboard = true,
         allowMultipleClicks = false,
+        dismissal = "always", // dismiss after click? [always | handler | never]
       } = {}
     ) {
       let prom = new Promise((resolve) => {
@@ -219,10 +219,12 @@ export default {
         this.alertQueue.queue(
           ((that) => {
             return () => {
+              // alert("Present Queue diapatched");
               for (var i = 0; i < actions.length; i++) {
                 if (actions[i].type == "cancel") {
                   actions[i].handler = () => {
                     that.dismissInline(identifier);
+                    // although the alert will automatically be dismissed after an option is clicked, we still want to dismiss it here to ensure it really gets dismissed
                   };
                 }
               }
@@ -243,6 +245,7 @@ export default {
                 preventKeyboard: preventKeyboard,
                 preventHandlerCalls: false,
                 allowMultipleClicks: allowMultipleClicks,
+                dismissal: dismissal,
               });
               that.alertStack.push(identifier);
               Vue.nextTick(function () {
@@ -262,7 +265,9 @@ export default {
       let prom = new Promise((resolve) => {
         this.alertQueue.queue(
           ((that) => {
+            // alert("Queued: Dismissal");
             return () => {
+              // alert("Dismiss Queue diapatched");
               if (identifier == null) {
                 identifier = this.alertStack[this.alertStack.length - 1];
               }
@@ -310,6 +315,23 @@ export default {
       }
       return classess;
     },
+    async asyncCall(fx, ...args) {
+      return (async () => {
+        return fx(...args); // Will resolve immediately if the function is not async, or otherwise will resolve when the async function resolves.
+      })().catch((e) => {
+        // Using this method so that that fx is wrapped with an async function and its error is always handled within this function.
+        console.log(e);
+        if (this.developerMode) {
+          this.present(
+            "[Developer] An internal error occured with the alertbox handler.",
+            "While executing the handler for alert with: \nidentifier: " +
+              "\n\n" +
+              e
+          );
+        }
+        return false;
+      });
+    },
     handlerProxy(identifier, actionIndex) {
       let currentAlert = this.alerts[identifier];
       if (!currentAlert) {
@@ -321,36 +343,44 @@ export default {
       if (currentAlert.allowMultipleClicks === false) {
         currentAlert.preventHandlerCalls = true;
       }
-      try {
-        let res = currentAlert.actions[actionIndex].handler(
+
+      let dismiss = null;
+      this.asyncCall(
+          currentAlert.actions[actionIndex].handler,
           identifier,
           actionIndex
         );
-        if (res === false) {
+      if (currentAlert.dismissal != "handler") {
+        if (currentAlert.dismissal === "always") {
+          dismiss = true;
+        } else if (currentAlert.dismissal === "never") {
+          dismiss = false;
+        }
+
+        if (dismiss === false) {
           // Don't dismiss and allow further options
           currentAlert.preventHandlerCalls = false;
         } else {
           this.dismiss(identifier);
         }
-      } catch (e) {
-        console.log(e);
-        if (this.developerMode) {
-          this.present(
-            "[Developer] An internal error occured with the alertbox handler.",
-            "While executing the handler for alert with: \nidentifier: " +
-              currentAlert.identifier +
-              "\ntitle: " +
-              currentAlert.title +
-              "\nmessage: " +
-              currentAlert.message +
-              "\nactionIndex: " +
-              actionIndex +
-              "\n\n" +
-              e
-          );
-        }
-        this.dismiss(identifier);
+        // Call handler
+        
+      } else {
+        // Handle the rest in the async handler
+        this.asyncCall(
+          currentAlert.actions[actionIndex].handler,
+          identifier,
+          actionIndex
+        ).then((dismiss) => {
+          if (dismiss === false) {
+            currentAlert.preventHandlerCalls = false;
+            return;
+          }
+          this.dismiss(identifier);
+        });
+        return;
       }
+      // For better user experience, we want to execute the handler after the current one's dismissal has been queued'
     },
     getCancelAction(actions) {
       let decidedAction = null;

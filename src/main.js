@@ -7,7 +7,7 @@ Vue.config.productionTip = false
 Vue.use(vueAlerts, {
   developerMode: true,
   presentBlockTime: 100,
-  dismissBlockTime: 300,
+  dismissBlockTime: 100,
 })
 
 new Vue({
