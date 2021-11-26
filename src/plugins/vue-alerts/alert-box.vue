@@ -27,83 +27,90 @@
             opacity: 1;
             font-size: 1.2em;
             overflow-wrap: break-word;
+            overflow-y: auto;
+            overflow-x: hidden;
           "
         >
-          <div style="padding: 1.5em 1.5em 0em 1.5em">
-            <div style="font-weight: bold; white-space: pre-wrap">
-              <!-- Title -->
-              {{ alert.title }}
-            </div>
-            <div
-              style="
-                font-weight: plain;
-                margin-top: 0.5em;
-                white-space: pre-wrap;
-              "
-            >
-              <!-- Title -->
-              {{ alert.message }}
-            </div>
-          </div>
-          <div
-            style="
-              margin: 1em 0em 0em 0em;
-              display: flex;
-              overflow-x: hidden;
-              overflow-y: auto;
-            "
-            :style="
-              alert.actions.length == 2
-                ? 'flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;'
-                : 'flex-direction: column;'
-            "
-          >
-            <div
-              v-for="(action, index) in alert.actions"
-              :key="index"
-              style="
-                position: relative;
-                flex-grow: 1;
-                max-width: 100%;
-                min-width: 50%;
-              "
-              :style="
-                index == alert.actions.length - 1 && alert.actions.length != 2
-                  ? 'border-radius: 0 0 1em 1em;'
-                  : ''
-              "
-              class="alertAction"
-            >
+          <div style="display: flex; flex-direction: column">
+            <div style="padding: 1.5em 1.5em 0em 1.5em">
+              <!-- Alert title and Content -->
+              <div style="font-weight: bold; white-space: pre-wrap">
+                <!-- Title -->
+                {{ alert.title }}
+              </div>
               <div
-                v-if="
-                  action.type == 'normal' ||
-                  action.type == 'cancel' ||
-                  action.type == 'destructive'
+                style="
+                  font-weight: plain;
+                  margin-top: 0.5em;
+                  white-space: pre-wrap;
+                  user-select: none;
                 "
               >
-                <div
-                  style="
-                    padding: 0.7em 0.7em 0.7em 0.7em;
-                    border-top: 0.1px solid rgba(0, 0, 0, 0.1);
-                    cursor: pointer;
-                    overflow-wrap: break-word;
-                    text-align: center;
-                    user-select: none;
-                  "
-                  :style="
-                    alert.actions.length == 2
-                      ? 'border-left: 0.1px solid rgba(0, 0, 0, 0.1); '
-                      : ' '
-                  "
-                  :class="
-                    getActionStyleClassess(action.type, identifier, index)
-                  "
-                  @click="handlerProxy(identifier, index)"
-                >
-                  {{ action.title }}
-                </div>
+                <!-- Title -->
+                {{ alert.message }}
               </div>
-              <!-- <div v-if="action.type"></div> -->
+            </div>
+            <div
+              style="
+                margin: 1em 0em 0em 0em;
+                display: flex;
+                overflow-x: hidden;
+                overflow-y: auto;
+                user-select: none;
+              "
+              :style="
+                alert.actions.length == 2
+                  ? 'flex-direction: row; justify-content: space-evenly; flex-wrap: wrap;'
+                  : 'flex-direction: column;'
+              "
+            >
+              <div
+                v-for="(action, index) in alert.actions"
+                :key="index"
+                style="
+                  position: relative;
+                  flex-grow: 1;
+                  max-width: 100%;
+                  min-width: 50%;
+                "
+                :style="
+                  index == alert.actions.length - 1 && alert.actions.length != 2
+                    ? 'border-radius: 0 0 1em 1em;'
+                    : ''
+                "
+                class="alertAction"
+              >
+                <div
+                  v-if="
+                    action.type == 'normal' ||
+                    action.type == 'cancel' ||
+                    action.type == 'destructive'
+                  "
+                >
+                  <div
+                    style="
+                      padding: 0.7em 0.7em 0.7em 0.7em;
+                      border-top: 0.1px solid rgba(0, 0, 0, 0.1);
+                      cursor: pointer;
+                      overflow-wrap: break-word;
+                      text-align: center;
+                      user-select: none;
+                    "
+                    :style="
+                      alert.actions.length == 2
+                        ? 'border-left: 0.1px solid rgba(0, 0, 0, 0.1); '
+                        : ' '
+                    "
+                    :class="
+                      getActionStyleClassess(action.type, identifier, index)
+                    "
+                    @click="handlerProxy(identifier, index)"
+                  >
+                    {{ action.title }}
+                  </div>
+                </div>
+                <!-- <div v-if="action.type"></div> -->
+              </div>
             </div>
           </div>
         </div>
@@ -211,95 +218,99 @@ export default {
         defaultEscapeAction = null, // If null and a cancel action is present, then that first cancel action becomes the default. Otherwise, the alert can not be dismissed via esc.
         preventKeyboard = true,
         allowMultipleClicks = false,
-        dismissal = "always", // dismiss after click? [always | handler | never]
+        immediately = false,
       } = {}
     ) {
       let prom = new Promise((resolve) => {
         let identifier = Math.floor(Math.random() * 10000000);
-        this.alertQueue.queue(
-          ((that) => {
-            return () => {
-              // alert("Present Queue diapatched");
-              for (var i = 0; i < actions.length; i++) {
-                if (actions[i].type == "cancel") {
-                  actions[i].handler = () => {
-                    that.dismissInline(identifier);
-                    // although the alert will automatically be dismissed after an option is clicked, we still want to dismiss it here to ensure it really gets dismissed
-                  };
-                }
+        let executePresent = ((that) => {
+          return () => {
+            // alert("Present Queue diapatched");
+            for (var i = 0; i < actions.length; i++) {
+              if (actions[i].type == "cancel") {
+                actions[i].handler = () => {
+                  that.dismissInline(identifier);
+                  // although the alert will automatically be dismissed after an option is clicked, we still want to dismiss it here to ensure it really gets dismissed
+                };
               }
-              this.stackLevel = this.stackLevel + 1; // increment the stack level
-              Vue.set(that.alerts, identifier, {
-                identifier: identifier,
-                title: title,
-                message: message,
-                stackLevel: this.stackLevel,
-                actions: actions,
-                defaultAction:
-                  defaultAction != null
-                    ? defaultAction
-                    : this.getCancelAction(actions),
-                defaultEscapeAction: defaultEscapeAction
-                  ? defaultEscapeAction
+            }
+            this.stackLevel = this.stackLevel + 1; // increment the stack level
+            Vue.set(that.alerts, identifier, {
+              identifier: identifier,
+              title: title,
+              message: message,
+              stackLevel: this.stackLevel,
+              actions: actions,
+              defaultAction:
+                defaultAction != null
+                  ? defaultAction
                   : this.getCancelAction(actions),
-                preventKeyboard: preventKeyboard,
-                preventHandlerCalls: false,
-                allowMultipleClicks: allowMultipleClicks,
-                dismissal: dismissal,
-              });
-              that.alertStack.push(identifier);
-              Vue.nextTick(function () {
-                that.$refs["alert_" + identifier][0].focus();
-              }, that);
-              setTimeout(() => {
-                that.alertQueue.dequeue();
-                resolve(identifier);
-              }, that.presentBlockTime);
-            };
-          })(this)
-        );
+              defaultEscapeAction: defaultEscapeAction
+                ? defaultEscapeAction
+                : this.getCancelAction(actions),
+              preventKeyboard: preventKeyboard,
+              preventHandlerCalls: false,
+              allowMultipleClicks: allowMultipleClicks,
+            });
+            that.alertStack.push(identifier);
+            Vue.nextTick(function () {
+              that.$refs["alert_" + identifier][0].focus();
+            }, that);
+            setTimeout(() => {
+              that.alertQueue.dequeue();
+              resolve(identifier);
+            }, that.presentBlockTime);
+          };
+        })(this);
+        if (immediately) {
+          executePresent();
+        } else {
+          this.alertQueue.queue(executePresent);
+        }
       });
       return prom;
     },
-    async dismiss(identifier = null) {
+    async dismiss(identifier = null, { immediately = false } = {}) {
       let prom = new Promise((resolve) => {
-        this.alertQueue.queue(
-          ((that) => {
-            // alert("Queued: Dismissal");
-            return () => {
-              // alert("Dismiss Queue diapatched");
-              if (identifier == null) {
-                identifier = this.alertStack[this.alertStack.length - 1];
-              }
-              if (that.alerts[identifier] == undefined) {
+        let executeDismiss = ((that) => {
+          // alert("Queued: Dismissal");
+          return () => {
+            // alert("Dismiss Queue diapatched");
+            if (identifier == null) {
+              identifier = this.alertStack[this.alertStack.length - 1];
+            }
+            if (that.alerts[identifier] == undefined) {
+              that.alertQueue.dequeue();
+              resolve(false);
+              return;
+            }
+            identifier = parseInt(identifier, 10);
+            Vue.delete(that.alerts, identifier);
+            that.alertStack.splice(that.alertStack.indexOf(identifier), 1);
+            Vue.nextTick(() => {
+              setTimeout(() => {
                 that.alertQueue.dequeue();
-                resolve(false);
-                return;
-              }
-              identifier = parseInt(identifier, 10);
-              Vue.delete(that.alerts, identifier);
-              that.alertStack.splice(that.alertStack.indexOf(identifier), 1);
-              Vue.nextTick(() => {
-                setTimeout(() => {
-                  that.alertQueue.dequeue();
-                  resolve(true);
-                }, that.dismissBlockTime);
-              });
-              // Checks if the stackLevel can be resetted.
-              if (Object.keys(that.alerts).length == 0) {
-                // Resets the stackLevel when there is no more active alerts
-                this.stackLevel = 0;
-              }
-            };
-          })(this)
-        );
+                resolve(true);
+              }, 300);
+            });
+            // Checks if the stackLevel can be resetted.
+            if (Object.keys(that.alerts).length == 0) {
+              // Resets the stackLevel when there is no more active alerts
+              this.stackLevel = 0;
+            }
+          };
+        })(this);
+        if (immediately) {
+          executeDismiss();
+        } else {
+          this.alertQueue.queue(executeDismiss, immediately);
+        }
       });
       return prom;
     },
     dismissInline(identifier) {
-      // return function () {
-      this.dismiss(identifier);
-      // };
+      // When the user chooses to dismiss the alert, we want to do so immediately.
+      this.dismiss(identifier, { immediately: true });
     },
     getActionStyleClassess(type, identifier, actionIndex) {
       let ActionStyles = {
@@ -324,12 +335,13 @@ export default {
         if (this.developerMode) {
           this.present(
             "[Developer] An internal error occured with the alertbox handler.",
-            "While executing the handler for alert with: \nidentifier: " +
+            "While executing the alert action handler: " +
+              fx +
               "\n\n" +
-              e
+              e +
+              "\n\n This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console. This has been printed in the console."
           );
         }
-        return false;
       });
     },
     handlerProxy(identifier, actionIndex) {
@@ -343,44 +355,23 @@ export default {
       if (currentAlert.allowMultipleClicks === false) {
         currentAlert.preventHandlerCalls = true;
       }
-
-      let dismiss = null;
       this.asyncCall(
-          currentAlert.actions[actionIndex].handler,
-          identifier,
-          actionIndex
-        );
-      if (currentAlert.dismissal != "handler") {
-        if (currentAlert.dismissal === "always") {
-          dismiss = true;
-        } else if (currentAlert.dismissal === "never") {
-          dismiss = false;
-        }
-
+        currentAlert.actions[actionIndex].handler,
+        identifier,
+        actionIndex
+      ).then((dismiss) => {
         if (dismiss === false) {
-          // Don't dismiss and allow further options
           currentAlert.preventHandlerCalls = false;
-        } else {
-          this.dismiss(identifier);
+          return;
         }
-        // Call handler
-        
-      } else {
-        // Handle the rest in the async handler
-        this.asyncCall(
-          currentAlert.actions[actionIndex].handler,
-          identifier,
-          actionIndex
-        ).then((dismiss) => {
-          if (dismiss === false) {
-            currentAlert.preventHandlerCalls = false;
-            return;
-          }
-          this.dismiss(identifier);
-        });
-        return;
-      }
-      // For better user experience, we want to execute the handler after the current one's dismissal has been queued'
+        this.dismiss(identifier, { immediately: true });
+        // Important Notes:
+        // The reason why we want to dismiss immediately here:
+        // - The handler takes quite a bit of time to execute
+        // - In the handler, it will usually present other alerts - this adds to the queue - and we are waiting for the handler to return a result before we actually dismiss the previous one.
+        // - We don't want to wait for the new alert to appear before dismissing the previous one - it will be ugly and the user will see twice the shadow flashing for [this.dismissBlockTime].
+      });
+      return;
     },
     getCancelAction(actions) {
       let decidedAction = null;
