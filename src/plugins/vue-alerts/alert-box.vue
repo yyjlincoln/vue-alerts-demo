@@ -388,6 +388,10 @@ export default {
 </script>
 
 <style scoped>
+::-webkit-scrollbar {
+    width: 0;  /* Remove scrollbar space */
+    background: transparent;  /* Optional: just make scrollbar invisible */
+}
 .alertAction:hover {
   background-color: rgba(0, 0, 0, 0.1);
 }
