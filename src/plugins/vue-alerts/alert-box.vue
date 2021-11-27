@@ -34,7 +34,13 @@
           <div style="display: flex; flex-direction: column">
             <div style="padding: 1.5em 1.5em 0em 1.5em">
               <!-- Alert title and Content -->
-              <div style="font-weight: bold; white-space: pre-wrap">
+              <div
+                style="
+                  font-weight: bold;
+                  white-space: pre-wrap;
+                  user-select: none;
+                "
+              >
                 <!-- Title -->
                 {{ alert.title }}
               </div>
@@ -333,7 +339,7 @@ export default {
         // Using this method so that that fx is wrapped with an async function and its error is always handled within this function.
         console.log(e);
         if (this.developerMode) {
-          console.log(fx)
+          console.log(fx);
           this.present(
             "[Developer] An internal error occured with the alertbox handler.",
             "While executing the alert action handler: " +
@@ -390,8 +396,8 @@ export default {
 
 <style scoped>
 ::-webkit-scrollbar {
-    width: 0;  /* Remove scrollbar space */
-    background: transparent;  /* Optional: just make scrollbar invisible */
+  width: 0; /* Remove scrollbar space */
+  background: transparent; /* Optional: just make scrollbar invisible */
 }
 .alertAction:hover {
   background-color: rgba(0, 0, 0, 0.1);
