@@ -1,7 +1,7 @@
 import Vue from 'vue'
 import App from './App.vue'
 
-import vueAlerts from "@/plugins/vue-alerts"
+import vueAlerts from "vue-alerts"
 Vue.config.productionTip = false
 
 Vue.use(vueAlerts, {
